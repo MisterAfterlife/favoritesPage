@@ -1,0 +1,16 @@
+<% include header %>
+<% if(foods.length){ %>
+	<% foods.forEach(function(food){  %>
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<div class="text-muted pull-right">
+				<%= food.published %>
+			</div>
+			<%= food.title %>
+		</div>
+	</div>
+	<% }) %>
+	<% } else { %>
+	No entries! <a href="/new-entry"> Add a Favorite Food?</a>
+	<% } %>
+<% include footer %>
