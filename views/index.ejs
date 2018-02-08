@@ -1,12 +1,12 @@
 <% include header %>
 <% if(foods.length){ %>
-	<% foods.forEach(function(food){  %>
+	<% foods.forEach(function(username){  %>
 	<div class="panel panel-default">
 		<div class="panel-heading">
 			<div class="text-muted pull-right">
-				<%= food.published %>
+				<%= username.published %>
 			</div>
-			<%= food.title %>
+			<%= username.food.title %>
 		</div>
 	</div>
 	<% }) %>

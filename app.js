@@ -8,8 +8,6 @@ var passport = require('passport');
 var session = require('express-session');
 var MongoClient = require('mongodb').MongoClient;
 var url = "mongodb://localhost:27017/";
-var currentUser = null;
-
 var app = express();
 
 app.set('views', path.resolve(__dirname, 'views'));
@@ -52,7 +50,6 @@ passport.use(new LocalStrategy({
 			dbObj.collection("users").findOne({username:username}, function(err, results){
 				if(results.password === password){
 					var user = results;
-					currentUser = user;
 					done(null, user);
 				}
 				else{
@@ -73,7 +70,6 @@ function ensureAuthenticated(req, res, next){
 
 app.get("/logout", function(req, res){
 	req.logout();
-	currentUser = null;
 	res.redirect("/sign-in");
 });
 
@@ -81,9 +77,10 @@ app.get("/", ensureAuthenticated, function(req, res){
 	MongoClient.connect(url, function(err,db){
 		if(err)throw err;
 		var dbObj = db.db("foods");
-	
-		dbObj.collection("foods").find().toArray(function(err, results){
-			console.log("Site Served");
+		var user = String(req.user.username);
+		
+		dbObj.collection("foods").find({username:user}).toArray(function(err, results){
+			console.log(results);
 			db.close();
 			res.render("index",{foods:results});
 		});	
@@ -98,6 +95,14 @@ app.get("/sign-in", function(req, res){
 	res.render("sign-in");
 });
 
+app.get("/sign-up", function(req, res){
+	res.render("sign-up");
+});
+
+app.get("/success",function(req, res){
+	res.render("success");
+});
+
 app.post("/new-entry", function(req, res){
 	if(!req.body.title){
 		res.status(400).send("Entries must have some text!");
@@ -109,7 +114,13 @@ app.post("/new-entry", function(req, res){
 				
 		var dbObj = db.db("foods");
 		
-		dbObj.collection("foods").save(req.body, function(err, results){
+		var user = 
+		{
+			username:req.user.username,
+			food:req.body
+		}
+		
+		dbObj.collection("foods").save(user, function(err, results){
 			console.log("Data saved");
 			db.close();
 			res.redirect("/");
@@ -130,19 +141,10 @@ app.post("/sign-up",function(req, res){
 			password: req.body.password
 		};
 		
-		
 		dbObj.collection('users').insert(user, function(err, results){
 			if(err) throw err;
-			
-			// Create a seperate database for users
-			dbObj.collection('foods').createUser(user, function(err, results)
-			{
-				if(err) throw err;
-				Console.log("User added to food database");
-			});
-			
 			req.login(req.body,function(){
-			res.redirect('/profile');
+			res.redirect('/success');
 			});
 		});
 	});	
@@ -157,6 +159,7 @@ app.post("/sign-in", passport.authenticate('local', {
 app.get('/profile', function(req, res){
 	res.json(req.user);	
 });
+
 
 app.use(function(req, res){
 	res.status(404).render("404");
